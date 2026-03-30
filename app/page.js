@@ -130,7 +130,7 @@ export default function KangRewang() {
         padding: "0 24px", height: 60,
         display: "flex", alignItems: "center", justifyContent: "space-between",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, position: "absolute", left: "50%", transform: "translateX(-50%)" }}>
           <img src="/logo.png" alt="Kang Rewang" style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover" }} />
           <span style={{ fontWeight: 700, fontSize: 16, color: "#fff" }}>Kang Rewang</span>
         </div>
@@ -194,7 +194,7 @@ export default function KangRewang() {
           </h1>
 
           <p style={{ fontSize: "clamp(16px, 3vw, 22px)", color: "rgba(255,255,255,0.85)", margin: "0 0 12px", fontStyle: "italic" }}>
-            "Rewang Apa Wae, Ora Rewel"
+            "Rewang Apa Bae, Ora Rewel"
           </p>
           <p style={{ fontSize: 15, color: "rgba(255,255,255,0.6)", margin: "0 0 40px" }}>
             Jasa asisten personal lokal — antar-jemput, belanja, titip antrian,<br />bantu pindahan, temenin acara, dan masih banyak lagi.
@@ -393,7 +393,7 @@ export default function KangRewang() {
 
           <h2 style={{ fontSize: 28, fontWeight: 800, color: "#fff", margin: "0 0 8px" }}>Kang Rewang</h2>
           <p style={{ fontSize: 14, color: "rgba(255,255,255,0.5)", margin: "0 0 32px", fontStyle: "italic" }}>
-            "Rewang Apa Wae, Ora Rewel"
+            "Rewang Apa Bae, Ora Rewel"
           </p>
 
           <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap", marginBottom: 40 }}>
