@@ -130,7 +130,7 @@ export default function KangRewang() {
         padding: "0 24px", height: 60,
         display: "flex", alignItems: "center", justifyContent: "space-between",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, position: "absolute", left: "50%", transform: "translateX(-50%)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <img src="/logo.png" alt="Kang Rewang" style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover" }} />
           <span style={{ fontWeight: 700, fontSize: 16, color: "#fff" }}>Kang Rewang</span>
         </div>
@@ -174,6 +174,7 @@ export default function KangRewang() {
             width: 120, height: 120, borderRadius: "50%", objectFit: "cover",
             border: `4px solid ${GOLD}`, marginBottom: 24,
             boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+            display: "block", margin: "0 auto 24px",
           }} />
 
           <div style={{
