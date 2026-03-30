@@ -64,7 +64,7 @@ const reasons = [
   { icon: "💬", title: "Respon Cepat", desc: "Chat langsung dibalas, ga dibiarkan pending berlama-lama." },
   { icon: "🕐", title: "Tepat Waktu", desc: "Amanah soal waktu — kalau bilang jam 8, ya jam 8." },
   { icon: "🤲", title: "Jujur & Amanah", desc: "Harga transparan dari awal, ora nggetok, ora nipu." },
-  { icon: "😊", title: "Ramah & Ora Rewel", desc: "Gelem bantu apa wae selagi masuk akal dan halal." },
+  { icon: "😊", title: "Ramah & Ora Rewel", desc: "Gelem bantu apa bae selagi masuk akal dan halal." },
   { icon: "📍", title: "Lokal Purwokerto", desc: "Paham jalanan, paham situasi, paham kebutuhan warga lokal." },
   { icon: "💰", title: "Harga Masuk Akal", desc: "Wajar, bisa nego santai, tidak ada biaya tersembunyi." },
 ];
@@ -243,7 +243,7 @@ export default function KangRewang() {
                 Daftar Layanan & Pricelist
               </span>
               <h2 style={{ fontSize: "clamp(28px, 5vw, 42px)", fontWeight: 800, color: DARK, margin: "8px 0 12px" }}>
-                Gelem Rewang Apa Wae
+                Gelem Rewang Apa Bae
               </h2>
               <p style={{ fontSize: 15, color: "#666", maxWidth: 480, margin: "0 auto" }}>
                 Harga transparan, ora nggetok. Bisa menyesuaikan jika jarak jauh, hujan, atau tengah malam.
