@@ -288,6 +288,41 @@ try {
 
   assert.deepEqual(errors, [], 'tidak ada error JavaScript');
   ok('tidak ada error JavaScript di konsol');
+
+  // ---------- Layar pembuka tidak boleh loading selamanya
+  // (a) Pengecekan sesi macet → layar "Koneksi lambat" + tombol coba lagi
+  await page.evaluate(() => localStorage.setItem('kr.test.hang', '1'));
+  await page.goto(BASE);
+  await page.waitForSelector('#btn-retry-boot', { timeout: 13000 });
+  await page.waitForSelector('#splash', { state: 'detached', timeout: 2000 });
+  await shot('16-koneksi-lambat', false);
+  await page.evaluate(() => localStorage.removeItem('kr.test.hang'));
+  ok('sesi macet: muncul layar Koneksi lambat (bukan loading terus)');
+
+  // (b) Skrip aplikasi gagal dimuat → bantuan di layar pembuka
+  const p2 = await context.newPage();
+  await p2.route('**/js/app.js', (r) => r.fulfill({ contentType: 'text/javascript', body: 'throw new Error("uji gagal muat")' }));
+  await p2.goto(BASE);
+  await p2.waitForSelector('#splash-reload', { timeout: 18000 });
+  assert.match(await p2.locator('#splash-help').innerText(), /uji gagal muat/);
+  await p2.screenshot({ path: join(shots, '17-splash-bantuan.png') });
+  await p2.close();
+  ok('aplikasi gagal dimuat: layar pembuka menampilkan Muat ulang & Perbarui aplikasi');
+
+  // (c) api.js ASLI + supabase-js asli, server tidak bisa dihubungi, ada sesi kedaluwarsa di HP
+  const p3 = await context.newPage();
+  const p3err = [];
+  p3.on('pageerror', (e) => p3err.push(e.message));
+  await p3.route('**/js/config.js', (r) => r.fulfill({ contentType: 'text/javascript',
+    body: 'window.KR_CONFIG={SUPABASE_URL:"http://127.0.0.1:9",SUPABASE_ANON_KEY:"eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYW5vbiJ9.x"};' }));
+  await p3.goto(BASE + 'favicon-placeholder');
+  await p3.evaluate(() => localStorage.setItem('sb-127-auth-token', JSON.stringify({
+    access_token: 'x.eyJleHAiOjF9.y', refresh_token: 'r', expires_at: 1, expires_in: 3600, token_type: 'bearer', user: { id: 'u' } })));
+  await p3.goto(BASE);
+  await p3.waitForSelector('#login-form, #btn-retry-boot', { timeout: 14000 });
+  await p3.waitForSelector('#splash', { state: 'detached', timeout: 2000 });
+  await p3.close();
+  ok('supabase-js asli + server tak terjangkau: tidak tersangkut di layar pembuka');
   console.log(`\nSemua ${results.length} skenario UI LULUS. Tangkapan layar: ${shots}`);
 } catch (e) {
   await shot('GAGAL').catch(() => {});

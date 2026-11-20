@@ -33,7 +33,10 @@ async function net() {
 
 export const isConfigured = () => true;
 export const init = () => ({});
-export async function getSession() { return session; }
+export async function getSession() {
+  if (localStorage.getItem('kr.test.hang')) return new Promise(() => {}); // simulasi koneksi macet
+  return session;
+}
 export function onAuthChange(cb) { listeners.push(cb); return { data: { subscription: { unsubscribe() {} } } }; }
 export async function signIn(email, password) {
   await net();

@@ -525,3 +525,9 @@ details.more > .field + .field { margin-top: 10px; }
 .form-stack > .card > .card-title, .form-stack > .card > .card-head { margin-bottom: 0; }
 .form-stack > .card > .calc-box { margin-top: 0; }
 .action-grid-3 { grid-template-columns: repeat(3, 1fr); }
+
+/* Bantuan di layar pembuka bila aplikasi lama dimuat */
+#splash-help { display: grid; gap: 10px; justify-items: center; margin-top: 18px; padding: 0 24px; text-align: center; max-width: 360px; }
+#splash-help .splash-msg { color: #fff; font-weight: 600; }
+#splash-help .splash-err { color: rgba(255,255,255,.75); font-size: 12px; word-break: break-word; }
+#splash-help .splash-link { color: #fff; text-decoration: underline; }
