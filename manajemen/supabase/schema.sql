@@ -700,6 +700,15 @@ end;
 $$;
 
 -- Kolom is_owner tidak boleh diubah dari aplikasi.
+-- Hak akses tabel untuk user yang login. Ditulis eksplisit karena project
+-- Supabase baru tidak lagi otomatis memberi akses tabel ke role API.
+-- Siapa yang BOLEH melihat baris tetap dibatasi RLS (hanya pemilik).
+grant usage on schema public to authenticated;
+grant select, insert, update, delete on
+  public.service_categories, public.expense_categories, public.app_settings,
+  public.invoice_counters, public.orders, public.order_items, public.expenses
+  to authenticated;
+grant select on public.profiles to authenticated;
 revoke update on public.profiles from anon, authenticated;
 grant update (full_name) on public.profiles to authenticated;
 

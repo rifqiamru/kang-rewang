@@ -1,4 +1,6 @@
 -- Stub minimal lingkungan Supabase untuk pengujian lokal (BUKAN untuk produksi).
+-- Sengaja TANPA "default privileges": project Supabase baru tidak lagi otomatis
+-- memberi akses tabel ke role API, jadi skema harus memberi GRANT sendiri.
 do $$ begin
   if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon nologin; end if;
   if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated nologin; end if;
@@ -15,5 +17,3 @@ create or replace function auth.uid() returns uuid language sql stable as $$
 $$;
 grant usage on schema auth, public to anon, authenticated;
 grant execute on function auth.uid() to anon, authenticated;
-alter default privileges in schema public grant all on tables to anon, authenticated;
-alter default privileges in schema public grant all on sequences to anon, authenticated;
