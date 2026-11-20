@@ -15,7 +15,7 @@ if (existsSync(envFile)) {
   }
 }
 
-const url = (process.env.SUPABASE_URL || '').trim();
+let url = (process.env.SUPABASE_URL || '').trim();
 const key = (process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || '').trim();
 
 function jwtRole(token) {
@@ -30,8 +30,21 @@ if (key && (key.startsWith('sb_secret_') || jwtRole(key) === 'service_role')) {
   console.error('  Gunakan "anon" / "publishable" key dari Supabase → Project Settings → API.\n');
   process.exit(1);
 }
-if (url && !/^https:\/\/[a-z0-9-]+\.supabase\.(co|in)\/?$|^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/?$/.test(url)) {
-  console.warn('⚠ SUPABASE_URL tidak tampak seperti URL Supabase:', url);
+// Ambil hanya bagian "https://xxxx.supabase.co" — buang path seperti /rest/v1/
+// yang sering ikut tersalin dari dashboard Supabase.
+if (url) {
+  let parsed;
+  try { parsed = new URL(url); } catch {
+    console.error('\n✖ SUPABASE_URL tidak valid. Contoh yang benar: https://abcdefghijkl.supabase.co\n');
+    process.exit(1);
+  }
+  if (parsed.pathname !== '/' || parsed.search) {
+    console.warn(`⚠ SUPABASE_URL berisi path "${parsed.pathname}${parsed.search}" — dipotong menjadi ${parsed.origin}`);
+  }
+  url = parsed.origin;
+  if (!/^https:\/\/[a-z0-9-]+\.supabase\.(co|in)$|^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(url)) {
+    console.warn(`⚠ SUPABASE_URL (${parsed.host}) tidak tampak seperti URL Supabase. Periksa kembali nilainya.`);
+  }
 }
 if (!url || !key) {
   console.warn('⚠ SUPABASE_URL / SUPABASE_ANON_KEY belum diatur. Aplikasi akan menampilkan layar "Konfigurasi belum lengkap".');

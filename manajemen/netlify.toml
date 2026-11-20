@@ -6,6 +6,9 @@
 
 [build.environment]
   NODE_VERSION = "20"
+  # Repo ini juga berisi landing page Next.js di root. Netlify bisa memasang
+  # plugin Next.js otomatis; aplikasi ini bukan Next.js, jadi plugin dilewati.
+  NETLIFY_NEXT_PLUGIN_SKIP = "true"
 
 [[headers]]
   for = "/*"
