@@ -2,7 +2,7 @@
 import * as api from '../api.js';
 import { icon } from '../icons.js';
 import { esc, loadingHTML, errorHTML, badge } from '../ui.js';
-import { rupiah, todayJakarta, formatDateFull, periodRange, formatDateTime } from '../lib/format.js';
+import { rupiah, todayJakarta, formatDateFull, formatDateLong, periodRange, formatDateTime } from '../lib/format.js';
 import { pendingDrafts, loadDraft, draftKey, hasMeaningfulContent } from '../lib/drafts.js';
 import { openExpenseForm } from './expenses.js';
 
@@ -40,14 +40,15 @@ export async function render(root, _params, ctx) {
     try {
       const week = periodRange('week', today);
       const month = periodRange('month', today);
-      const [sToday, sWeek, sMonth, out, recent] = await Promise.all([
+      const [sToday, sWeek, sMonth, out, recent, bal] = await Promise.all([
         api.summary(today, today),
         api.summary(week.start, week.end),
         api.summary(month.start, month.end),
         api.outstanding(),
         api.recentActivity(6),
+        api.balance(),
       ]);
-      body.innerHTML = view(sToday, sWeek, sMonth, out, recent);
+      body.innerHTML = view(sToday, sWeek, sMonth, out, recent, bal);
     } catch (e) {
       body.innerHTML = errorHTML(e.message);
       body.querySelector('[data-retry]')?.addEventListener('click', load);
@@ -56,9 +57,18 @@ export async function render(root, _params, ctx) {
   await load();
 }
 
-function view(t, w, m, out, recent) {
+function view(t, w, m, out, recent, bal) {
   const profitCls = t.net_profit < 0 ? 'neg' : '';
   return `
+    <section class="card balance-card">
+      <div class="bc-main">
+        <span class="bc-label">${icon('wallet')} Saldo usaha</span>
+        <span class="bc-value ${bal.balance < 0 ? 'neg' : ''}">${rupiah(bal.balance)}</span>
+        <span class="bc-sub">${bal.start_date ? `Sejak ${formatDateLong(bal.start_date)} · ` : ''}saldo awal ${rupiah(bal.opening_amount)} + jasa ${rupiah(bal.service_revenue)} − pengeluaran ${rupiah(bal.expense_total)}</span>
+      </div>
+      <a href="#/pengaturan?bagian=saldo" class="bc-link">Atur saldo awal ${icon('right', 'chev')}</a>
+    </section>
+
     <section class="card hero">
       <div class="hero-top">
         <span class="hero-label">Keuntungan bersih hari ini</span>

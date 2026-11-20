@@ -531,3 +531,12 @@ details.more > .field + .field { margin-top: 10px; }
 #splash-help .splash-msg { color: #fff; font-weight: 600; }
 #splash-help .splash-err { color: rgba(255,255,255,.75); font-size: 12px; word-break: break-word; }
 #splash-help .splash-link { color: #fff; text-decoration: underline; }
+
+/* Kartu saldo usaha (dashboard) */
+.balance-card { display: grid; gap: 10px; border: 2px solid var(--yellow); background: linear-gradient(135deg, #FFFDF5, #FFF5DA); }
+.bc-main { display: grid; gap: 2px; }
+.bc-label { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--navy); }
+.bc-label .ic { width: 18px; height: 18px; color: var(--yellow-dark); }
+.bc-value { font-size: 28px; font-weight: 800; color: var(--navy); letter-spacing: -.01em; }
+.bc-sub { font-size: 12px; color: var(--muted-ink); }
+.bc-link { display: inline-flex; align-items: center; gap: 2px; font-size: 13px; font-weight: 700; justify-self: start; min-height: 32px; }

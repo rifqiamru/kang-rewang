@@ -181,6 +181,17 @@ test('rekap harian sesuai contoh', () => {
   }
   assert.doesNotMatch(txt, /KR-2611003/);
   assert.match(txt, /1 transaksi dibatalkan/);
+  assert.doesNotMatch(txt, /SALDO/, 'tanpa data saldo, bagian saldo tidak tampil');
+});
+
+test('rekap harian dengan saldo usaha', () => {
+  const txt = buildRekapText({
+    date: '2026-11-20', orders: [], expenses: [],
+    summary: { order_count: 0, cash_in: 0, service_revenue: 0, expense_total: 0, net_profit: 0 },
+    balance: { balance: 520000 },
+  });
+  assert.ok(txt.includes('💼 *SALDO USAHA*'));
+  assert.ok(txt.split('\n').includes('Saldo akhir hari: Rp520.000'));
 });
 
 test('link WhatsApp & CSV', () => {

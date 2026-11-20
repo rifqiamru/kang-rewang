@@ -19,6 +19,7 @@ export const DEFAULT_SETTINGS = {
   },
   invoice: { prefix: 'KR', digits: 3 },
   display: { show_pending_revenue: true },
+  balance: { opening_amount: 0, start_date: null },
 };
 
 /** Gabungkan pengaturan dari database dengan nilai bawaan. */
@@ -120,8 +121,9 @@ export function buildNotaText(order, settings = DEFAULT_SETTINGS) {
  *   orders: daftar order hari itu (termasuk yang dibatalkan; akan disaring)
  *   expenses: [{ category_name, description, amount }]
  *   summary: hasil get_financial_summary untuk tanggal tsb.
+ *   balance: hasil get_balance(tanggal) — opsional, menambah baris saldo.
  */
-export function buildRekapText({ date, orders = [], expenses = [], summary, settings = DEFAULT_SETTINGS }) {
+export function buildRekapText({ date, orders = [], expenses = [], summary, balance = null, settings = DEFAULT_SETTINGS }) {
   const biz = settings.business || {};
   const active = orders.filter((o) => o.order_status !== 'Dibatalkan');
   const cancelled = orders.length - active.length;
@@ -184,6 +186,13 @@ export function buildRekapText({ date, orders = [], expenses = [], summary, sett
   L.push('');
   L.push(`*KEUNTUNGAN BERSIH: ${rupiah(summary.net_profit)}*`);
   L.push(LINE);
+  if (balance) {
+    L.push('');
+    L.push('💼 *SALDO USAHA*');
+    L.push('');
+    L.push(`Saldo akhir hari: ${rupiah(balance.balance)}`);
+    L.push(LINE);
+  }
   L.push('');
   L.push('Terima kasih.');
   L.push(String(biz.name || 'KANG REWANG').toUpperCase());

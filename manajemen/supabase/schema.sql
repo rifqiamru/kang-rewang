@@ -651,6 +651,49 @@ as $$
   order by d.day;
 $$;
 
+-- Saldo usaha (satu saldo gabungan).
+--   Saldo = saldo awal + pendapatan jasa (order Selesai) − pengeluaran operasional
+-- Uang belanja titipan TIDAK masuk saldo. Dihitung sejak tanggal mulai
+-- (app_settings 'balance'.start_date; kosong = sejak transaksi pertama)
+-- sampai tanggal p_as_of (kosong = hari ini, Asia/Jakarta).
+create or replace function public.get_balance(p_as_of date default null)
+returns jsonb
+language sql
+stable
+as $$
+  with cfg as (
+    select coalesce((s.setting_value ->> 'opening_amount')::bigint, 0) as opening,
+           nullif(s.setting_value ->> 'start_date', '')::date as start_date
+    from (select 1) one
+    left join public.app_settings s on s.setting_key = 'balance'
+  ),
+  d as (
+    select coalesce(p_as_of, (now() at time zone 'Asia/Jakarta')::date) as as_of
+  ),
+  r as (
+    select coalesce(sum(o.service_revenue), 0) as revenue
+    from public.orders o, cfg, d
+    where o.order_status = 'Selesai'
+      and o.transaction_date <= d.as_of
+      and (cfg.start_date is null or o.transaction_date >= cfg.start_date)
+  ),
+  e as (
+    select coalesce(sum(x.amount), 0) as expenses
+    from public.expenses x, cfg, d
+    where x.expense_date <= d.as_of
+      and (cfg.start_date is null or x.expense_date >= cfg.start_date)
+  )
+  select jsonb_build_object(
+    'as_of', d.as_of,
+    'opening_amount', cfg.opening,
+    'start_date', cfg.start_date,
+    'service_revenue', r.revenue,
+    'expense_total', e.expenses,
+    'balance', cfg.opening + r.revenue - e.expenses
+  )
+  from cfg, d, r, e;
+$$;
+
 -- Ringkasan semua waktu: order belum selesai & tagihan belum lunas.
 create or replace function public.get_outstanding()
 returns jsonb
@@ -726,11 +769,13 @@ grant  execute on function public.next_invoice_number(date)           to authent
 revoke execute on function public.get_financial_summary(date, date)   from public, anon;
 revoke execute on function public.get_daily_series(date, date)        from public, anon;
 revoke execute on function public.get_outstanding()                   from public, anon;
+revoke execute on function public.get_balance(date)                   from public, anon;
 grant  execute on function public.save_order(jsonb)                   to authenticated;
 grant  execute on function public.get_order(uuid)                     to authenticated;
 grant  execute on function public.get_financial_summary(date, date)   to authenticated;
 grant  execute on function public.get_daily_series(date, date)        to authenticated;
 grant  execute on function public.get_outstanding()                   to authenticated;
+grant  execute on function public.get_balance(date)                   to authenticated;
 grant  execute on function public.is_owner()                          to authenticated;
 
 -- ---------------------------------------------------------------------
@@ -764,5 +809,6 @@ insert into public.app_settings (setting_key, setting_value) values
       'dana',  jsonb_build_object('enabled', true, 'number', '081292923132'),
       'qris',  jsonb_build_object('enabled', true, 'info', 'Cek Katalog'))),
   ('invoice', jsonb_build_object('prefix', 'KR', 'digits', 3)),
-  ('display', jsonb_build_object('show_pending_revenue', true))
+  ('display', jsonb_build_object('show_pending_revenue', true)),
+  ('balance', jsonb_build_object('opening_amount', 0, 'start_date', null))
 on conflict (setting_key) do nothing;

@@ -145,14 +145,16 @@ try {
   assert.match(hero, /Uang masuk\s*Rp116\.000/);
   assert.match(hero, /Pendapatan jasa\s*Rp45\.000/);
   assert.match(hero, /Pengeluaran\s*Rp25\.000/);
-  ok('Dashboard: laba 20.000, 2 transaksi, uang masuk 116.000, jasa 45.000, biaya 25.000');
+  assert.match(await text('.balance-card'), /Saldo usaha\s*Rp20\.000/, 'saldo = jasa 45.000 − biaya 25.000 (titipan tidak masuk)');
+  ok('Dashboard: laba 20.000, 2 transaksi, uang masuk 116.000, jasa 45.000, biaya 25.000, saldo 20.000');
   await shot('06-dashboard');
 
   await go('#/rekap');
   await page.waitForSelector('.wa-preview');
   const rekap = await text('.wa-preview');
   for (const l of ['Jumlah order: 2', 'Uang masuk pelanggan: Rp116.000', 'Pendapatan jasa: Rp45.000', 'Dana titipan belanja: Rp71.000',
-    '1. Bensin: Rp20.000', '2. Parkir: Rp5.000', 'Total pengeluaran: Rp25.000', '*KEUNTUNGAN BERSIH: Rp20.000*']) {
+    '1. Bensin: Rp20.000', '2. Parkir: Rp5.000', 'Total pengeluaran: Rp25.000', '*KEUNTUNGAN BERSIH: Rp20.000*',
+    'Saldo akhir hari: Rp20.000']) {
     assert.ok(rekap.includes(l), 'rekap: ' + l);
   }
   ok('Rekap harian: angka sama dengan dashboard');
@@ -169,6 +171,7 @@ try {
   assert.match(lap, /Total pendapatan jasa\s*Rp45\.000/);
   assert.match(lap, /Total pengeluaran\s*Rp25\.000/);
   assert.match(lap, /Keuntungan bersih\s*Rp20\.000/);
+  assert.match(lap, /Saldo usaha akhir periode\s*Rp20\.000/);
   ok('Laporan keuangan: 116.000 / 116.000 / 0 / 71.000 / 45.000 / 25.000 / 20.000');
 
   const [dl] = await Promise.all([page.waitForEvent('download'), page.click('[data-exp=orders]')]);
@@ -261,6 +264,24 @@ try {
   assert.ok(prev.includes('Bank BRI'));
   await page.click('.sheet [data-close]');
   ok('pengaturan pembayaran: metode nonaktif tidak tampil di nota');
+
+  // Saldo awal → saldo dashboard bertambah sebesar saldo awal
+  await go('#/');
+  await page.waitForSelector('.balance-card');
+  const before = Number((await text('.bc-value')).replace(/[^0-9-]/g, ''));
+  await page.click('.bc-link');
+  await page.waitForSelector('#set-saldo');
+  await page.fill('#set-saldo [name=opening_amount]', '100000');
+  await page.click('#set-saldo [type=submit]');
+  await page.waitForSelector('.toast-success');
+  await page.waitForFunction(() => /Saldo saat ini/.test(document.querySelector('#saldo-now')?.textContent || ''));
+  await page.screenshot({ path: join(shots, '18-pengaturan-saldo.png'), fullPage: false });
+  await go('#/');
+  await page.waitForSelector('.balance-card');
+  const after = Number((await text('.bc-value')).replace(/[^0-9-]/g, ''));
+  assert.equal(after - before, 100000, `saldo awal menambah saldo: ${before} → ${after}`);
+  await shot('19-dashboard-saldo', false);
+  ok('saldo awal di Pengaturan langsung menambah saldo di dashboard');
 
   // ---------- Menu lainnya & desktop
   await go('#/');

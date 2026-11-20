@@ -253,6 +253,10 @@ export async function summary(start, end) {
 export async function dailySeries(start, end) {
   return run(init().rpc('get_daily_series', { p_start: start, p_end: end }));
 }
+/** Saldo usaha per tanggal (kosong = hari ini). Lihat get_balance di schema.sql. */
+export async function balance(asOf) {
+  return run(init().rpc('get_balance', asOf ? { p_as_of: asOf } : {}));
+}
 export async function outstanding() {
   return run(init().rpc('get_outstanding'));
 }

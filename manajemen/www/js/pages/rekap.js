@@ -28,10 +28,10 @@ export async function render(root, _params, ctx) {
     history.replaceState(null, '', `#/rekap?tanggal=${date}`);
     body.innerHTML = loadingHTML('Menyusun rekap…');
     try {
-      const [summary, orders, expenses] = await Promise.all([
-        api.summary(date, date), api.ordersForRange(date, date), api.expensesForRange(date, date),
+      const [summary, orders, expenses, balance] = await Promise.all([
+        api.summary(date, date), api.ordersForRange(date, date), api.expensesForRange(date, date), api.balance(date),
       ]);
-      const text = buildRekapText({ date, orders, expenses, summary, settings: ctx.settings });
+      const text = buildRekapText({ date, orders, expenses, summary, balance, settings: ctx.settings });
       const active = orders.filter((o) => o.order_status !== 'Dibatalkan');
       const cancelled = orders.filter((o) => o.order_status === 'Dibatalkan');
       body.innerHTML = `
@@ -47,12 +47,12 @@ export async function render(root, _params, ctx) {
             <div class="stat"><span class="stat-label">Pengeluaran</span><span class="stat-value">${rupiah(summary.expense_total)}</span></div>
           </div>
         </section>
-        ${summary.trust_funds || summary.receivables || summary.pending_revenue ? `
         <section class="card"><dl class="kv">
+          <div class="kv-strong"><dt>Saldo usaha akhir hari</dt><dd class="${balance.balance < 0 ? 'neg' : ''}">${rupiah(balance.balance)}</dd></div>
           ${summary.trust_funds ? `<div><dt>Dana titipan belanja (bukan pendapatan)</dt><dd>${rupiah(summary.trust_funds)}</dd></div>` : ''}
           ${summary.receivables ? `<div><dt>Belum dibayar (piutang)</dt><dd class="warn">${rupiah(summary.receivables)}</dd></div>` : ''}
           ${summary.pending_revenue ? `<div><dt>Jasa dari order belum selesai</dt><dd>${rupiah(summary.pending_revenue)}</dd></div>` : ''}
-        </dl></section>` : ''}
+        </dl></section>
 
         <div class="action-grid">
           <button class="btn btn-primary" id="btn-copy">${icon('copy')} Salin Rekap</button>
