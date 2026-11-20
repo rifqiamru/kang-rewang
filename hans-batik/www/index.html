@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Hans Batik</title>
+  <meta name="description" content="Aplikasi manajemen penjualan dan keuangan Hans Batik — nota PDF berkop, data penjualan, rekap, laporan.">
+  <meta name="theme-color" content="#4A240E">
+  <meta name="color-scheme" content="light">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Hans Batik">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <!-- Splash / loading screen -->
+  <div id="splash" aria-hidden="true">
+    <img src="icons/icon-192.png" alt="" width="96" height="96">
+    <h1>HANS BATIK</h1>
+    <p>Batik Tulis &amp; Batik Cap</p>
+    <span class="spinner spinner-light"></span>
+    <div id="splash-help" hidden></div>
+  </div>
+
+  <div id="offline-bar" hidden role="status">Offline — data belum bisa disimpan ke server. Isian nota tetap tersimpan sebagai draft.</div>
+
+  <main id="login" class="login" hidden></main>
+
+  <div id="app" class="layout" hidden>
+    <aside class="sidebar" aria-label="Navigasi utama">
+      <div class="side-brand">
+        <img src="icons/icon-192.png" alt="" width="40" height="40">
+        <div><b data-brand-name>HANS BATIK</b><small data-brand-tagline>Batik Tulis &amp; Batik Cap</small></div>
+      </div>
+      <nav id="sidebar-links"></nav>
+    </aside>
+    <div class="content">
+      <header class="topbar">
+        <img src="icons/icon-192.png" alt="" width="32" height="32" class="topbar-logo">
+        <div class="topbar-text"><small data-brand-name>HANS BATIK</small><h1 id="page-title">Dashboard</h1></div>
+      </header>
+      <main id="main"></main>
+    </div>
+    <nav class="bottom-nav" id="bottom-nav" aria-label="Navigasi bawah"></nav>
+  </div>
+
+  <div id="toasts" aria-live="polite"></div>
+
+  <script src="js/boot-guard.js"></script>
+  <script src="vendor/supabase.js"></script>
+  <script src="js/config.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
