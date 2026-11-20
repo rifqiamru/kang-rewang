@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#011F7B"/>
+  <g transform="translate(76 76) scale(0.703)">
+    <circle cx="256" cy="226" r="150" fill="#FFBA09"/>
+    <g fill="none" stroke="#011F7B" stroke-width="20" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="176" cy="276" r="40"/><circle cx="340" cy="276" r="40"/>
+      <path d="M216 276h84l28-96h-52"/><path d="M300 156h44l20 52"/><path d="M176 236h70"/>
+    </g>
+    <text x="256" y="452" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="86" letter-spacing="6" fill="#FFFFFF">KR</text>
+  </g>
+</svg>
