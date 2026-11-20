@@ -161,37 +161,47 @@ test('nota: tanpa barang, biaya tambahan, diskon, DP, metode nonaktif', () => {
   assert.doesNotMatch(noPay, /INFO PEMBAYARAN/);
 });
 
-test('rekap harian sesuai contoh', () => {
+test('rekap kas harian sesuai format pemilik', () => {
   const txt = buildRekapText({
-    date: '2026-11-20',
+    date: '2026-10-26',
+    openingBalance: 404000,
     orders: [
-      { invoice_number: 'KR-2611001', customer_name: 'Budi', service_name: 'Titip Belanja', total_amount: 91000, payment_status: 'Lunas', order_status: 'Selesai' },
-      { invoice_number: 'KR-2611002', customer_name: 'Ani', service_name: 'Antar Barang', total_amount: 25000, payment_status: 'Lunas', order_status: 'Selesai' },
-      { invoice_number: 'KR-2611003', customer_name: 'X', service_name: 'Jastip', total_amount: 5000, payment_status: 'Lunas', order_status: 'Dibatalkan' },
+      { invoice_number: 'KR-2610001', customer_name: 'Bu Ugi', service_name: 'Titip Belanja', order_status: 'Selesai',
+        total_amount: 85000, goods_total: 70000, service_revenue: 15000 },
+      { invoice_number: 'KR-2610002', customer_name: 'Pak Batal', order_status: 'Dibatalkan', service_revenue: 20000 },
+      { invoice_number: 'KR-2610003', customer_name: 'Belum Selesai', order_status: 'Diproses', service_revenue: 10000 },
     ],
-    expenses: [{ category_name: 'Bensin', amount: 20000 }, { category_name: 'Parkir', amount: 5000 }],
-    summary: { order_count: 2, cash_in: 116000, service_revenue: 45000, trust_funds: 71000, receivables: 0,
-      pending_revenue: 0, expense_total: 25000, net_profit: 20000 },
+    expenses: [
+      { category_name: 'Bensin', description: '', amount: 10000 },
+      { category_name: 'Konsumsi', description: 'Haqi jajan', amount: 6000 },
+    ],
   });
-  for (const line of ['📅 Tanggal: 20 November 2026', '1. KR-2611001', '   Pelanggan: Budi', '   Total: Rp91.000',
-    '   Status: Lunas', 'Jumlah order: 2', 'Uang masuk pelanggan: Rp116.000', 'Pendapatan jasa: Rp45.000',
-    '1. Bensin: Rp20.000', '2. Parkir: Rp5.000', 'Total pengeluaran: Rp25.000', '*KEUNTUNGAN BERSIH: Rp20.000*',
-    'KANG REWANG', 'Rewang Apa Bae, Ora Rewel.']) {
-    assert.ok(txt.split('\n').includes(line), 'baris hilang: ' + line);
-  }
-  assert.doesNotMatch(txt, /KR-2611003/);
-  assert.match(txt, /1 transaksi dibatalkan/);
-  assert.doesNotMatch(txt, /SALDO/, 'tanpa data saldo, bagian saldo tidak tampil');
+  assert.equal(txt, [
+    'REKAP KAS HARIAN',
+    'Senin, 26 Oktober 2026',
+    '',
+    'Saldo Awal: Rp 404.000',
+    '',
+    'Pemasukan:',
+    '- Bu Ugi: Rp 15.000',
+    'Total Pemasukan: Rp 15.000',
+    '',
+    'Pengeluaran:',
+    '- Bensin: Rp 10.000',
+    '- Haqi jajan: Rp 6.000',
+    'Total Pengeluaran: Rp 16.000',
+    '',
+    'Saldo Akhir: Rp 403.000',
+  ].join('\n'));
 });
 
-test('rekap harian dengan saldo usaha', () => {
-  const txt = buildRekapText({
-    date: '2026-11-20', orders: [], expenses: [],
-    summary: { order_count: 0, cash_in: 0, service_revenue: 0, expense_total: 0, net_profit: 0 },
-    balance: { balance: 520000 },
-  });
-  assert.ok(txt.includes('💼 *SALDO USAHA*'));
-  assert.ok(txt.split('\n').includes('Saldo akhir hari: Rp520.000'));
+test('rekap kas: hari kosong & pelanggan tanpa nama', () => {
+  const kosong = buildRekapText({ date: '2026-11-20', openingBalance: 50000 });
+  assert.match(kosong, /Pemasukan:\n- Tidak ada\nTotal Pemasukan: Rp 0/);
+  assert.match(kosong, /Saldo Akhir: Rp 50\.000$/);
+  const tanpaNama = buildRekapText({ date: '2026-11-20', orders: [
+    { invoice_number: 'KR-1', customer_name: '', service_name: 'Antar Jemput', order_status: 'Selesai', service_revenue: 20000 }] });
+  assert.match(tanpaNama, /- Antar Jemput: Rp 20\.000/);
 });
 
 test('link WhatsApp & CSV', () => {

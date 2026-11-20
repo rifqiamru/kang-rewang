@@ -1,5 +1,5 @@
 // Teks nota & rekap untuk WhatsApp. Modul murni (bisa diuji di Node).
-import { rupiah, formatDateLong, formatQuantity } from './format.js';
+import { rupiah, formatDateLong, formatDateFull, formatQuantity } from './format.js';
 
 export const LINE = '━━━━━━━━━━━━━━━━━━━━━━';
 
@@ -116,87 +116,51 @@ export function buildNotaText(order, settings = DEFAULT_SETTINGS) {
 }
 
 /**
- * Rekap harian untuk grup WhatsApp.
- * @param {object} p { date, orders, expenses, summary, settings }
- *   orders: daftar order hari itu (termasuk yang dibatalkan; akan disaring)
+ * Rekap kas harian untuk WhatsApp. Pemasukan = ONGKOS JASA saja (pendapatan
+ * jasa order berstatus Selesai); uang belanja titipan tidak dihitung.
+ * @param {object} p
+ *   date: "YYYY-MM-DD"
+ *   orders: order pada tanggal tsb. (yang belum Selesai/dibatalkan disaring)
  *   expenses: [{ category_name, description, amount }]
- *   summary: hasil get_financial_summary untuk tanggal tsb.
- *   balance: hasil get_balance(tanggal) — opsional, menambah baris saldo.
+ *   openingBalance: saldo akhir hari sebelumnya (get_balance(tanggal − 1))
  */
-export function buildRekapText({ date, orders = [], expenses = [], summary, balance = null, settings = DEFAULT_SETTINGS }) {
-  const biz = settings.business || {};
-  const active = orders.filter((o) => o.order_status !== 'Dibatalkan');
-  const cancelled = orders.length - active.length;
+export function rekapKas({ orders = [], expenses = [], openingBalance = 0 }) {
+  const income = orders
+    .filter((o) => o.order_status === 'Selesai' && Number(o.service_revenue) !== 0)
+    .map((o) => ({
+      label: String(o.customer_name || '').trim() || o.service_name || o.invoice_number,
+      amount: Number(o.service_revenue) || 0,
+    }));
+  const outgoing = expenses.map((e) => ({
+    label: String(e.description || '').trim() || e.category_name || 'Pengeluaran',
+    amount: Number(e.amount) || 0,
+  }));
+  const totalIn = income.reduce((t, x) => t + x.amount, 0);
+  const totalOut = outgoing.reduce((t, x) => t + x.amount, 0);
+  const opening = Number(openingBalance) || 0;
+  return { income, outgoing, totalIn, totalOut, opening, closing: opening + totalIn - totalOut };
+}
+
+export function buildRekapText({ date, orders = [], expenses = [], openingBalance = 0 }) {
+  const k = rekapKas({ orders, expenses, openingBalance });
+  const R = (n) => rupiah(n, { space: true });
   const L = [];
-
-  L.push(LINE);
-  L.push(`📊 *REKAP HARIAN ${String(biz.name || 'KANG REWANG').toUpperCase()}*`);
-  L.push(LINE);
-  L.push(`📅 Tanggal: ${formatDateLong(date)}`);
+  L.push('REKAP KAS HARIAN');
+  L.push(formatDateFull(date));
   L.push('');
-  L.push('🛵 *DAFTAR TRANSAKSI*');
+  L.push(`Saldo Awal: ${R(k.opening)}`);
   L.push('');
-  if (!active.length) {
-    L.push('Belum ada transaksi.');
-  } else {
-    active.forEach((o, i) => {
-      if (i > 0) L.push('');
-      L.push(`${i + 1}. ${o.invoice_number}`);
-      L.push(`   Pelanggan: ${String(o.customer_name || '').trim() || '—'}`);
-      L.push(`   Layanan: ${o.service_name || '—'}`);
-      L.push(`   Total: ${rupiah(o.total_amount)}`);
-      const st = o.order_status === 'Selesai' ? o.payment_status : `${o.payment_status} · ${o.order_status}`;
-      L.push(`   Status: ${st}`);
-    });
-  }
-  if (cancelled > 0) {
-    L.push('');
-    L.push(`(${cancelled} transaksi dibatalkan, tidak dihitung)`);
-  }
-
+  L.push('Pemasukan:');
+  if (k.income.length) k.income.forEach((x) => L.push(`- ${x.label}: ${R(x.amount)}`));
+  else L.push('- Tidak ada');
+  L.push(`Total Pemasukan: ${R(k.totalIn)}`);
   L.push('');
-  L.push(LINE);
-  L.push('💰 *RINGKASAN TRANSAKSI*');
+  L.push('Pengeluaran:');
+  if (k.outgoing.length) k.outgoing.forEach((x) => L.push(`- ${x.label}: ${R(x.amount)}`));
+  else L.push('- Tidak ada');
+  L.push(`Total Pengeluaran: ${R(k.totalOut)}`);
   L.push('');
-  L.push(`Jumlah order: ${summary.order_count}`);
-  L.push(`Uang masuk pelanggan: ${rupiah(summary.cash_in)}`);
-  L.push(`Pendapatan jasa: ${rupiah(summary.service_revenue)}`);
-  if (Number(summary.trust_funds) > 0) L.push(`Dana titipan belanja: ${rupiah(summary.trust_funds)}`);
-  if (Number(summary.receivables) > 0) L.push(`Belum dibayar (piutang): ${rupiah(summary.receivables)}`);
-  if (Number(summary.pending_revenue) > 0) L.push(`Jasa order belum selesai: ${rupiah(summary.pending_revenue)}`);
-
-  L.push('');
-  L.push(LINE);
-  L.push('⛽ *PENGELUARAN OPERASIONAL*');
-  L.push('');
-  if (!expenses.length) {
-    L.push('Tidak ada pengeluaran.');
-  } else {
-    expenses.forEach((e, i) => L.push(`${i + 1}. ${e.category_name || 'Lainnya'}: ${rupiah(e.amount)}`));
-  }
-  L.push('');
-  L.push(`Total pengeluaran: ${rupiah(summary.expense_total)}`);
-
-  L.push('');
-  L.push(LINE);
-  L.push('📈 *RINGKASAN KEUANGAN*');
-  L.push('');
-  L.push(`Pendapatan jasa: ${rupiah(summary.service_revenue)}`);
-  L.push(`Pengeluaran: ${rupiah(summary.expense_total)}`);
-  L.push('');
-  L.push(`*KEUNTUNGAN BERSIH: ${rupiah(summary.net_profit)}*`);
-  L.push(LINE);
-  if (balance) {
-    L.push('');
-    L.push('💼 *SALDO USAHA*');
-    L.push('');
-    L.push(`Saldo akhir hari: ${rupiah(balance.balance)}`);
-    L.push(LINE);
-  }
-  L.push('');
-  L.push('Terima kasih.');
-  L.push(String(biz.name || 'KANG REWANG').toUpperCase());
-  L.push(`${biz.tagline || 'Rewang Apa Bae, Ora Rewel'}.`.replace(/\.\.$/, '.'));
+  L.push(`Saldo Akhir: ${R(k.closing)}`);
   return L.join('\n');
 }
 
