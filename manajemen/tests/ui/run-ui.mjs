@@ -152,12 +152,14 @@ try {
   await go('#/rekap');
   await page.waitForSelector('.wa-preview');
   const rekap = await text('.wa-preview');
-  for (const l of ['Jumlah order: 2', 'Uang masuk pelanggan: Rp116.000', 'Pendapatan jasa: Rp45.000', 'Dana titipan belanja: Rp71.000',
-    '1. Bensin: Rp20.000', '2. Parkir: Rp5.000', 'Total pengeluaran: Rp25.000', '*KEUNTUNGAN BERSIH: Rp20.000*',
-    'Saldo akhir hari: Rp20.000']) {
-    assert.ok(rekap.includes(l), 'rekap: ' + l);
+  const lines = rekap.split('\n');
+  for (const l of ['REKAP KAS HARIAN', 'Saldo Awal: Rp 0', 'Pemasukan:', '- Budi: Rp 20.000', '- Ani: Rp 25.000',
+    'Total Pemasukan: Rp 45.000', 'Pengeluaran:', '- Isi bensin motor: Rp 20.000', '- Parkir pasar: Rp 5.000',
+    'Total Pengeluaran: Rp 25.000', 'Saldo Akhir: Rp 20.000']) {
+    assert.ok(lines.includes(l), 'rekap: ' + l);
   }
-  ok('Rekap harian: angka sama dengan dashboard');
+  assert.ok(!rekap.includes('91.000'), 'uang belanja titipan tidak masuk rekap kas');
+  ok('Rekap kas harian: pemasukan hanya ongkos, saldo akhir sama dengan dashboard');
   await shot('07-rekap');
 
   await go('#/laporan');
