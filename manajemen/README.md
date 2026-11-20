@@ -64,14 +64,15 @@ manajemen/
 ## 3. Deploy ke Netlify
 
 1. **Add new site → Import an existing project** → pilih repository ini.
-2. **Base directory:** `manajemen` (build command & publish folder terbaca dari `netlify.toml`).
-3. **Site configuration → Environment variables**, tambahkan:
-   - `SUPABASE_URL` = `https://xxxx.supabase.co`
+2. **Project configuration → Build & deploy → Continuous deployment → Build settings → Configure**:
+   **Base directory** = `manajemen`, Build command & Publish directory dikosongkan (terbaca dari `netlify.toml`).
+3. **Project configuration → Environment variables**, tambahkan:
+   - `SUPABASE_URL` = `https://xxxx.supabase.co` (xxxx = Project ID; bagian path seperti `/rest/v1` otomatis dibuang)
    - `SUPABASE_ANON_KEY` = anon / publishable key
 4. Deploy. Buka situsnya dari Chrome di HP, login, lalu
    **menu ⋮ → Tambahkan ke layar utama / Install app**.
 
-Landing page Next.js di root repository tidak terpengaruh; aplikasi ini berdiri sendiri di folder `manajemen/`.
+Plugin Next.js Netlify dilewati otomatis (`NETLIFY_NEXT_PLUGIN_SKIP` di `netlify.toml`) karena landing page Next.js di root repository bukan bagian aplikasi ini; aplikasi ini berdiri sendiri di folder `manajemen/`.
 
 ### Menjalankan di komputer sendiri
 

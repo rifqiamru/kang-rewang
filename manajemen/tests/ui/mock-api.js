@@ -33,7 +33,10 @@ async function net() {
 
 export const isConfigured = () => true;
 export const init = () => ({});
-export async function getSession() { return session; }
+export async function getSession() {
+  if (localStorage.getItem('kr.test.hang')) return new Promise(() => {}); // simulasi koneksi macet
+  return session;
+}
 export function onAuthChange(cb) { listeners.push(cb); return { data: { subscription: { unsubscribe() {} } } }; }
 export async function signIn(email, password) {
   await net();
@@ -165,6 +168,17 @@ export async function dailySeries(s, e) {
     out.push({ day, order_count: sm.order_count, cash_in: sm.cash_in, service_revenue: sm.service_revenue, expense_total: sm.expense_total, net_profit: sm.net_profit });
   }
   return out;
+}
+export async function balance(asOf) {
+  await net();
+  const cfg = mergeSettings(db.settings).balance;
+  const end = asOf || todayJ();
+  const start = cfg.start_date || '0000-01-01';
+  const rev = db.orders.filter((o) => o.order_status === 'Selesai' && o.transaction_date >= start && o.transaction_date <= end)
+    .reduce((t, o) => t + o.service_revenue, 0);
+  const exp = db.expenses.filter((x) => x.expense_date >= start && x.expense_date <= end).reduce((t, x) => t + x.amount, 0);
+  return { as_of: end, opening_amount: cfg.opening_amount, start_date: cfg.start_date, service_revenue: rev, expense_total: exp,
+    balance: cfg.opening_amount + rev - exp };
 }
 export async function outstanding() {
   await net();

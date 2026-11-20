@@ -9,11 +9,30 @@ export function isConfigured() {
   return Boolean(c.SUPABASE_URL && c.SUPABASE_ANON_KEY && window.supabase?.createClient);
 }
 
+// Kunci sederhana di memori untuk proses auth Supabase. Kunci bawaan
+// (navigator.locks) diketahui bisa macet di aplikasi PWA Android saat
+// aplikasi dibuka lagi dari latar belakang, sehingga layar loading tidak
+// pernah selesai. Aplikasi ini dipakai satu orang di satu jendela.
+const authLocks = new Map();
+async function memoryLock(name, _acquireTimeout, fn) {
+  const prev = authLocks.get(name) || Promise.resolve();
+  let release;
+  const mine = new Promise((r) => { release = r; });
+  authLocks.set(name, prev.then(() => mine));
+  try { await prev; } catch { /* abaikan */ }
+  try {
+    return await fn();
+  } finally {
+    release();
+    if (authLocks.get(name) === mine) authLocks.delete(name);
+  }
+}
+
 export function init() {
   if (sb) return sb;
   const c = window.KR_CONFIG;
   sb = window.supabase.createClient(c.SUPABASE_URL, c.SUPABASE_ANON_KEY, {
-    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, lock: memoryLock },
   });
   return sb;
 }
@@ -233,6 +252,10 @@ export async function summary(start, end) {
 }
 export async function dailySeries(start, end) {
   return run(init().rpc('get_daily_series', { p_start: start, p_end: end }));
+}
+/** Saldo usaha per tanggal (kosong = hari ini). Lihat get_balance di schema.sql. */
+export async function balance(asOf) {
+  return run(init().rpc('get_balance', asOf ? { p_as_of: asOf } : {}));
 }
 export async function outstanding() {
   return run(init().rpc('get_outstanding'));

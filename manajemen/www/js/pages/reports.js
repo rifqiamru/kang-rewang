@@ -39,7 +39,10 @@ export async function render(root, _params, ctx) {
     $('#ptitle', root).textContent = periodLabel(range.start, range.end);
     body.innerHTML = loadingHTML('Menghitung laporan…');
     try {
-      const [s, series] = await Promise.all([api.summary(range.start, range.end), api.dailySeries(range.start, range.end)]);
+      const [s, series, bal] = await Promise.all([
+        api.summary(range.start, range.end), api.dailySeries(range.start, range.end), api.balance(range.end),
+      ]);
+      s.balance_end = bal.balance;
       body.innerHTML = view(s, series);
       if (series.length > 1) {
         disposers.push(barChart($('#chart-rev', root), {
@@ -86,6 +89,7 @@ export async function render(root, _params, ctx) {
           <div><dt>Total pendapatan jasa</dt><dd>${rupiah(s.service_revenue)}</dd></div>
           <div><dt>Total pengeluaran</dt><dd class="neg">${rupiah(s.expense_total)}</dd></div>
           <div class="kv-strong"><dt>Keuntungan bersih</dt><dd class="${s.net_profit < 0 ? 'neg' : 'pos'}">${rupiah(s.net_profit)}</dd></div>
+          <div class="kv-strong"><dt>Saldo usaha akhir periode</dt><dd class="${s.balance_end < 0 ? 'neg' : ''}">${rupiah(s.balance_end)}</dd></div>
         </dl>
         ${s.pending_revenue ? `<p class="field-hint">${icon('info')} Ada pendapatan jasa ${rupiah(s.pending_revenue)} dari ${s.open_count} order yang belum selesai — belum dihitung sampai status Selesai.</p>` : ''}
       </section>
@@ -174,6 +178,7 @@ export async function render(root, _params, ctx) {
             ['Pendapatan jasa order belum selesai', s.pending_revenue],
             ['Total pengeluaran', s.expense_total],
             ['Keuntungan bersih', s.net_profit],
+            [`Saldo usaha per ${range.end}`, s.balance_end],
             [],
             ['Tanggal', 'Jumlah Order', 'Uang Masuk', 'Pendapatan Jasa', 'Pengeluaran', 'Keuntungan Bersih'],
             ...series.map((d) => [d.day, d.order_count, d.cash_in, d.service_revenue, d.expense_total, d.net_profit]),

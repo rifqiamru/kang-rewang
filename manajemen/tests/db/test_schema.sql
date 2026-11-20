@@ -78,6 +78,22 @@ begin
   raise notice 'OK  skenario keuangan: nilai 116.000, jasa 45.000, titipan 71.000, biaya 25.000, laba 20.000';
 end $$;
 
+-- Saldo: hanya ongkos jasa − pengeluaran (dana titipan tidak masuk)
+do $$
+declare b jsonb;
+begin
+  b := public.get_balance('2026-11-20');
+  assert (b ->> 'balance')::int = 20000, 'saldo = 45.000 jasa − 25.000 biaya, bukan uang titipan: ' || (b ->> 'balance');
+  update public.app_settings set setting_value = '{"opening_amount": 500000, "start_date": "2026-11-01"}' where setting_key = 'balance';
+  b := public.get_balance('2026-11-20');
+  assert (b ->> 'balance')::int = 520000, 'saldo awal + jasa − biaya';
+  assert (public.get_balance('2026-11-19') ->> 'balance')::int = 500000, 'saldo per tanggal (sebelum transaksi)';
+  update public.app_settings set setting_value = '{"opening_amount": 0, "start_date": "2026-11-21"}' where setting_key = 'balance';
+  assert (public.get_balance('2026-11-20') ->> 'balance')::int = 0, 'transaksi sebelum tanggal mulai tidak dihitung';
+  update public.app_settings set setting_value = '{"opening_amount": 0, "start_date": null}' where setting_key = 'balance';
+  raise notice 'OK  saldo: saldo awal + pendapatan jasa − pengeluaran (titipan tidak masuk)';
+end $$;
+
 -- Idempoten: kirim ulang permintaan A yang sama
 do $$
 declare r jsonb;
@@ -227,6 +243,7 @@ begin
   assert (select count(*) from public.orders) = 0, 'penyusup tidak boleh melihat order';
   assert (select count(*) from public.expenses) = 0, 'penyusup tidak boleh melihat pengeluaran';
   assert (select count(*) from public.app_settings) = 0, 'penyusup tidak boleh melihat pengaturan';
+  assert (public.get_balance() ->> 'balance')::int = 0, 'penyusup tidak melihat saldo';
   begin
     perform public.save_order('{"service_fee":1000,"items":[]}'::jsonb);
     assert false, 'penyusup tidak boleh menyimpan';
@@ -259,6 +276,11 @@ begin
   begin
     perform public.get_financial_summary(current_date, current_date);
     assert false, 'anon tidak boleh memanggil laporan';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    perform public.get_balance();
+    assert false, 'anon tidak boleh melihat saldo';
   exception when insufficient_privilege then null;
   end;
   raise notice 'OK  RLS: pengunjung anonim ditolak';

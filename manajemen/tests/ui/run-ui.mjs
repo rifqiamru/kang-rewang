@@ -145,14 +145,16 @@ try {
   assert.match(hero, /Uang masuk\s*Rp116\.000/);
   assert.match(hero, /Pendapatan jasa\s*Rp45\.000/);
   assert.match(hero, /Pengeluaran\s*Rp25\.000/);
-  ok('Dashboard: laba 20.000, 2 transaksi, uang masuk 116.000, jasa 45.000, biaya 25.000');
+  assert.match(await text('.balance-card'), /Saldo usaha\s*Rp20\.000/, 'saldo = jasa 45.000 − biaya 25.000 (titipan tidak masuk)');
+  ok('Dashboard: laba 20.000, 2 transaksi, uang masuk 116.000, jasa 45.000, biaya 25.000, saldo 20.000');
   await shot('06-dashboard');
 
   await go('#/rekap');
   await page.waitForSelector('.wa-preview');
   const rekap = await text('.wa-preview');
   for (const l of ['Jumlah order: 2', 'Uang masuk pelanggan: Rp116.000', 'Pendapatan jasa: Rp45.000', 'Dana titipan belanja: Rp71.000',
-    '1. Bensin: Rp20.000', '2. Parkir: Rp5.000', 'Total pengeluaran: Rp25.000', '*KEUNTUNGAN BERSIH: Rp20.000*']) {
+    '1. Bensin: Rp20.000', '2. Parkir: Rp5.000', 'Total pengeluaran: Rp25.000', '*KEUNTUNGAN BERSIH: Rp20.000*',
+    'Saldo akhir hari: Rp20.000']) {
     assert.ok(rekap.includes(l), 'rekap: ' + l);
   }
   ok('Rekap harian: angka sama dengan dashboard');
@@ -169,6 +171,7 @@ try {
   assert.match(lap, /Total pendapatan jasa\s*Rp45\.000/);
   assert.match(lap, /Total pengeluaran\s*Rp25\.000/);
   assert.match(lap, /Keuntungan bersih\s*Rp20\.000/);
+  assert.match(lap, /Saldo usaha akhir periode\s*Rp20\.000/);
   ok('Laporan keuangan: 116.000 / 116.000 / 0 / 71.000 / 45.000 / 25.000 / 20.000');
 
   const [dl] = await Promise.all([page.waitForEvent('download'), page.click('[data-exp=orders]')]);
@@ -262,6 +265,24 @@ try {
   await page.click('.sheet [data-close]');
   ok('pengaturan pembayaran: metode nonaktif tidak tampil di nota');
 
+  // Saldo awal → saldo dashboard bertambah sebesar saldo awal
+  await go('#/');
+  await page.waitForSelector('.balance-card');
+  const before = Number((await text('.bc-value')).replace(/[^0-9-]/g, ''));
+  await page.click('.bc-link');
+  await page.waitForSelector('#set-saldo');
+  await page.fill('#set-saldo [name=opening_amount]', '100000');
+  await page.click('#set-saldo [type=submit]');
+  await page.waitForSelector('.toast-success');
+  await page.waitForFunction(() => /Saldo saat ini/.test(document.querySelector('#saldo-now')?.textContent || ''));
+  await page.screenshot({ path: join(shots, '18-pengaturan-saldo.png'), fullPage: false });
+  await go('#/');
+  await page.waitForSelector('.balance-card');
+  const after = Number((await text('.bc-value')).replace(/[^0-9-]/g, ''));
+  assert.equal(after - before, 100000, `saldo awal menambah saldo: ${before} → ${after}`);
+  await shot('19-dashboard-saldo', false);
+  ok('saldo awal di Pengaturan langsung menambah saldo di dashboard');
+
   // ---------- Menu lainnya & desktop
   await go('#/');
   await page.click('#btn-more');
@@ -288,6 +309,41 @@ try {
 
   assert.deepEqual(errors, [], 'tidak ada error JavaScript');
   ok('tidak ada error JavaScript di konsol');
+
+  // ---------- Layar pembuka tidak boleh loading selamanya
+  // (a) Pengecekan sesi macet → layar "Koneksi lambat" + tombol coba lagi
+  await page.evaluate(() => localStorage.setItem('kr.test.hang', '1'));
+  await page.goto(BASE);
+  await page.waitForSelector('#btn-retry-boot', { timeout: 13000 });
+  await page.waitForSelector('#splash', { state: 'detached', timeout: 2000 });
+  await shot('16-koneksi-lambat', false);
+  await page.evaluate(() => localStorage.removeItem('kr.test.hang'));
+  ok('sesi macet: muncul layar Koneksi lambat (bukan loading terus)');
+
+  // (b) Skrip aplikasi gagal dimuat → bantuan di layar pembuka
+  const p2 = await context.newPage();
+  await p2.route('**/js/app.js', (r) => r.fulfill({ contentType: 'text/javascript', body: 'throw new Error("uji gagal muat")' }));
+  await p2.goto(BASE);
+  await p2.waitForSelector('#splash-reload', { timeout: 18000 });
+  assert.match(await p2.locator('#splash-help').innerText(), /uji gagal muat/);
+  await p2.screenshot({ path: join(shots, '17-splash-bantuan.png') });
+  await p2.close();
+  ok('aplikasi gagal dimuat: layar pembuka menampilkan Muat ulang & Perbarui aplikasi');
+
+  // (c) api.js ASLI + supabase-js asli, server tidak bisa dihubungi, ada sesi kedaluwarsa di HP
+  const p3 = await context.newPage();
+  const p3err = [];
+  p3.on('pageerror', (e) => p3err.push(e.message));
+  await p3.route('**/js/config.js', (r) => r.fulfill({ contentType: 'text/javascript',
+    body: 'window.KR_CONFIG={SUPABASE_URL:"http://127.0.0.1:9",SUPABASE_ANON_KEY:"eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYW5vbiJ9.x"};' }));
+  await p3.goto(BASE + 'favicon-placeholder');
+  await p3.evaluate(() => localStorage.setItem('sb-127-auth-token', JSON.stringify({
+    access_token: 'x.eyJleHAiOjF9.y', refresh_token: 'r', expires_at: 1, expires_in: 3600, token_type: 'bearer', user: { id: 'u' } })));
+  await p3.goto(BASE);
+  await p3.waitForSelector('#login-form, #btn-retry-boot', { timeout: 14000 });
+  await p3.waitForSelector('#splash', { state: 'detached', timeout: 2000 });
+  await p3.close();
+  ok('supabase-js asli + server tak terjangkau: tidak tersangkut di layar pembuka');
   console.log(`\nSemua ${results.length} skenario UI LULUS. Tangkapan layar: ${shots}`);
 } catch (e) {
   await shot('GAGAL').catch(() => {});

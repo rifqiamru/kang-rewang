@@ -88,9 +88,37 @@ async function boot() {
     if (event === 'SIGNED_IN' && session && !started) startApp();
   });
   let session = null;
-  try { session = await api.getSession(); } catch { /* offline */ }
+  try {
+    session = await withTimeout(api.getSession(), 10000);
+  } catch (e) {
+    if (e?.timeout) { hideSplash(); renderSlowStart(); return; }
+    /* offline / error lain: lanjut ke layar login */
+  }
   hideSplash();
   if (session) startApp(); else renderLogin();
+}
+
+function withTimeout(promise, ms) {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => reject(Object.assign(new Error('timeout'), { timeout: true })), ms);
+    promise.then((v) => { clearTimeout(t); resolve(v); }, (e) => { clearTimeout(t); reject(e); });
+  });
+}
+
+/** Ditampilkan bila pengecekan sesi ke server terlalu lama (mis. sinyal lemah). */
+function renderSlowStart() {
+  $('#app').hidden = true;
+  const el = $('#login');
+  el.hidden = false;
+  el.innerHTML = `<div class="login-card">
+    <img src="icons/icon-192.png" alt="" class="login-logo" width="88" height="88">
+    <h1>Koneksi lambat</h1>
+    <p class="muted" style="margin:8px 0 18px">Server belum merespons. Periksa sinyal atau koneksi internet, lalu coba lagi.</p>
+    <button class="btn btn-accent btn-block btn-lg" id="btn-retry-boot">${icon('refresh')} Coba lagi</button>
+    <button class="btn btn-link btn-block" id="btn-reset-app">Masih gagal? Perbarui aplikasi</button>
+  </div>`;
+  $('#btn-retry-boot').onclick = () => location.reload();
+  $('#btn-reset-app').onclick = () => window.KR_RESET_APP?.();
 }
 
 function hideSplash() {

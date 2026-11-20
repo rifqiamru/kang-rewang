@@ -1,19 +1,20 @@
 // Pengaturan: identitas usaha, info pembayaran, kategori, nomor nota, tampilan, akun.
 import * as api from '../api.js';
 import { icon } from '../icons.js';
-import { $, esc, toast, withBusy, openSheet, confirmDialog } from '../ui.js';
-import { todayJakarta, isValidPhone, cleanPhone } from '../lib/format.js';
+import { $, esc, toast, withBusy, openSheet, confirmDialog, moneyInputHTML, bindMoneyInputs, moneyValue } from '../ui.js';
+import { todayJakarta, isValidPhone, cleanPhone, rupiah } from '../lib/format.js';
 import { getPref, setPref } from '../lib/drafts.js';
 import { buildNotaText } from '../lib/templates.js';
 
 export async function render(root, _params, ctx) {
   const s = ctx.settings;
   const biz = s.business; const pay = s.payment; const inv = s.invoice;
+  const bal = s.balance || { opening_amount: 0, start_date: null };
   const yymm = todayJakarta().slice(2, 4) + todayJakarta().slice(5, 7);
 
   root.innerHTML = `
     <nav class="chip-scroll set-nav">
-      <a class="chip-btn" href="#set-usaha">Usaha</a><a class="chip-btn" href="#set-bayar">Pembayaran</a>
+      <a class="chip-btn" href="#set-usaha">Usaha</a><a class="chip-btn" href="#set-bayar">Pembayaran</a><a class="chip-btn" href="#set-saldo">Saldo</a>
       <a class="chip-btn" href="#set-layanan">Layanan</a><a class="chip-btn" href="#set-biaya">Kategori biaya</a>
       <a class="chip-btn" href="#set-nota">Nomor nota</a><a class="chip-btn" href="#set-tampilan">Tampilan</a>
       <a class="chip-btn" href="#set-akun">Akun</a>
@@ -51,6 +52,16 @@ export async function render(root, _params, ctx) {
         <button class="btn btn-ghost" type="button" id="btn-preview">${icon('eye')} Contoh nota</button>
         <button class="btn btn-primary" type="submit">Simpan pembayaran</button>
       </div>
+    </form>
+
+    <form class="card form-stack" id="set-saldo" novalidate>
+      <h3 class="card-title">${icon('wallet')} Saldo usaha</h3>
+      <p class="field-hint">${icon('info')} Saldo = saldo awal + pendapatan jasa (order Selesai) − pengeluaran operasional. Uang belanja titipan pelanggan tidak masuk saldo.</p>
+      ${moneyInputHTML({ name: 'opening_amount', label: 'Saldo awal', value: bal.opening_amount })}
+      <label class="field"><span class="field-label">Mulai dihitung sejak tanggal <small>(kosongkan = sejak transaksi pertama)</small></span>
+        <input type="date" name="start_date" value="${esc(bal.start_date || '')}"></label>
+      <p class="field-hint" id="saldo-now"></p>
+      <button class="btn btn-primary" type="submit">Simpan saldo</button>
     </form>
 
     <section class="card" id="set-layanan">
@@ -136,6 +147,25 @@ export async function render(root, _params, ctx) {
     }, preview);
     openSheet({ title: 'Contoh nota', content: `<pre class="wa-preview">${esc(text)}</pre>` });
   });
+
+  // ---- Saldo
+  const saldoForm = $('#set-saldo', root);
+  bindMoneyInputs(saldoForm);
+  const showSaldo = () => api.balance().then((b) => {
+    $('#saldo-now', root).innerHTML = `Saldo saat ini: <b>${rupiah(b.balance)}</b>`;
+  }).catch(() => {});
+  showSaldo();
+  saldoForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const start = saldoForm.start_date.value;
+    if (start && start > todayJakarta()) return toast('Tanggal mulai tidak boleh di masa depan.', 'error');
+    await save(saldoForm.querySelector('[type=submit]'), 'balance',
+      { opening_amount: moneyValue(saldoForm.opening_amount), start_date: start || null });
+    showSaldo();
+  });
+  if (ctx.query().bagian === 'saldo') {
+    setTimeout(() => saldoForm.scrollIntoView({ block: 'start' }), 50);
+  }
 
   // ---- Nomor nota
   const notaForm = $('#set-nota', root);
