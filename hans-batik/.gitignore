@@ -1,6 +1,0 @@
-.env
-.env.*
-!.env.example
-www/js/config.js
-node_modules/
-tests/ui/screenshots/
