@@ -1,0 +1,15 @@
+{
+  "name": "kang-rewang-manajemen",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Aplikasi manajemen operasional & keuangan Kang Rewang (PWA, Vanilla JS + Supabase)",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build-config.mjs",
+    "dev": "node scripts/build-config.mjs && node scripts/serve.mjs",
+    "test": "node --test tests/unit.test.mjs",
+    "test:db": "bash tests/db/run.sh",
+    "test:ui": "node tests/ui/run-ui.mjs"
+  },
+  "engines": { "node": ">=18" }
+}

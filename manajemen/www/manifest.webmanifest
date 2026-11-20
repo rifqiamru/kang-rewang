@@ -1,0 +1,23 @@
+{
+  "name": "Kang Rewang — Manajemen Usaha",
+  "short_name": "Kang Rewang",
+  "description": "Nota, order, rekap harian, pengeluaran, dan laporan keuangan Kang Rewang.",
+  "lang": "id",
+  "start_url": "./#/",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#011F7B",
+  "theme_color": "#011F7B",
+  "categories": ["business", "finance", "productivity"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Buat Nota", "url": "./#/nota", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Catat Pengeluaran", "url": "./#/pengeluaran", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Rekap Hari Ini", "url": "./#/rekap", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}
